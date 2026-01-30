@@ -1,7 +1,6 @@
 
 import * as React from 'react';
-/* Added ChevronRight to imports to resolve the reference error on line 252 */
-import { Target, Map as MapIcon, Trophy, FileText, QrCode, CheckCircle2, Radio, Info, ShieldCheck, X, ListTree, Timer, Play, AlertTriangle, Lock, Plus, Minus, Award, Zap, Swords, Clock, ChevronRight } from 'lucide-react';
+import { Target, Map as MapIcon, Trophy, FileText, QrCode, CheckCircle2, Radio, Info, ShieldCheck, X, ListTree, Timer, Play, AlertTriangle, Lock, Plus, Minus, Award, Zap, Swords, Clock, ChevronRight, MapPin, ZoomIn, ZoomOut, Maximize, Crosshair } from 'lucide-react';
 import { TacticalButton } from '../components/TacticalButton';
 import { QRScanner } from '../components/QRScanner';
 import { OperationEvent, Mission, MissionStatus, Operator, MissionProgress, ArmyType } from '../types';
@@ -74,7 +73,12 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({
   const [detailMission, setDetailMission] = React.useState<Mission | null>(null);
   const [manualCode, setManualCode] = React.useState('');
   const [validationStatus, setValidationStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
-  const [currentTime, setCurrentTime] = React.useState(Date.now());
+  
+  // Estados para Navegação do Mapa
+  const [zoom, setZoom] = React.useState(1);
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [lastPos, setLastPos] = React.useState({ x: 0, y: 0 });
 
   const operator = ranking.find(op => op.id === operatorCallsign);
   const armyConfig = operator ? ARMY_CONFIG[operator.army] : null;
@@ -84,11 +88,6 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({
   );
 
   const primaryMissions = operatorMissions.filter(m => m.isMain);
-
-  React.useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleValidate = (code: string) => {
     if (!validatingMission) return;
@@ -106,6 +105,27 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({
       setTimeout(() => setValidationStatus('idle'), 2000);
     }
   };
+
+  // Funções de Mapa
+  const resetMap = () => { setZoom(1); setOffset({ x: 0, y: 0 }); };
+  const adjustZoom = (delta: number) => setZoom(prev => Math.min(Math.max(prev + delta, 1), 5));
+
+  const handleStart = (e: any) => {
+    setIsDragging(true);
+    const pos = e.touches ? e.touches[0] : e;
+    setLastPos({ x: pos.clientX, y: pos.clientY });
+  };
+
+  const handleMove = (e: any) => {
+    if (!isDragging) return;
+    const pos = e.touches ? e.touches[0] : e;
+    const dx = pos.clientX - lastPos.x;
+    const dy = pos.clientY - lastPos.y;
+    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    setLastPos({ x: pos.clientX, y: pos.clientY });
+  };
+
+  const handleEnd = () => setIsDragging(false);
 
   return (
     <div className="pb-24 pt-2">
@@ -174,8 +194,89 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({
           )}
 
           {activeTab === 'map' && (
-            <div className="military-border bg-black relative aspect-[4/5] overflow-hidden">
-              <img src={operation.mapUrl} className="w-full h-full object-contain grayscale brightness-50" />
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-l-4 border-amber pl-2 py-1 mb-2">
+                <div className="flex items-center gap-2">
+                  <Crosshair size={16} className="text-amber animate-pulse" />
+                  <h3 className="font-orbitron font-bold text-xs tracking-[0.2em] uppercase">Sinal de Satélite</h3>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => adjustZoom(0.5)} className="p-1 military-border bg-black text-amber"><ZoomIn size={14}/></button>
+                  <button onClick={() => adjustZoom(-0.5)} className="p-1 military-border bg-black text-amber"><ZoomOut size={14}/></button>
+                  <button onClick={resetMap} className="p-1 military-border bg-black text-amber"><Maximize size={14}/></button>
+                </div>
+              </div>
+
+              <div 
+                className="military-border bg-black relative aspect-[4/5] overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+                onMouseDown={handleStart}
+                onMouseMove={handleMove}
+                onMouseUp={handleEnd}
+                onMouseLeave={handleEnd}
+                onTouchStart={handleStart}
+                onTouchMove={handleMove}
+                onTouchEnd={handleEnd}
+              >
+                <div 
+                  className="absolute inset-0 transition-transform duration-75 ease-out will-change-transform flex items-center justify-center"
+                  style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
+                >
+                  {operation.mapUrl ? (
+                    <img 
+                      src={operation.mapUrl} 
+                      draggable={false}
+                      className="w-full h-full object-contain pointer-events-none" 
+                      style={{ filter: 'sepia(0.3) brightness(0.7) contrast(1.1) grayscale(0.5)' }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-amber/10">
+                      <AlertTriangle size={48} className="mb-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Aguardando Feed de Satélite</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* HUD Dinâmico */}
+                <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between">
+                  <div className="flex justify-between items-start opacity-60">
+                    <div className="font-mono text-[8px] bg-black/80 p-1 border border-amber/20">
+                      LAT: {(23.55 + (offset.y / 10000)).toFixed(5)}<br/>
+                      LNG: {(-46.63 + (offset.x / 10000)).toFixed(5)}
+                    </div>
+                    <div className="font-mono text-[8px] bg-black/80 p-1 border border-amber/20">
+                      MAG: {zoom.toFixed(1)}x<br/>
+                      ENC: AES-256
+                    </div>
+                  </div>
+                  
+                  {/* Bússola Decorativa */}
+                  <div className="absolute right-4 bottom-16 opacity-30">
+                     <div className="relative w-12 h-12 border border-amber rounded-full flex items-center justify-center">
+                        <div className="absolute top-0 font-black text-[8px] text-amber">N</div>
+                        <div className="w-px h-10 bg-amber/50 rotate-45"></div>
+                        <div className="w-px h-10 bg-amber/50 -rotate-45"></div>
+                     </div>
+                  </div>
+
+                  <div className="flex justify-center opacity-40">
+                     <div className="w-32 h-px bg-amber/30 relative">
+                        <div className="absolute -top-1 left-0 w-px h-2 bg-amber"></div>
+                        <div className="absolute -top-1 right-0 w-px h-2 bg-amber"></div>
+                        <div className="absolute -top-4 w-full text-center text-[7px] font-black">ESCALA: 50m</div>
+                     </div>
+                  </div>
+                </div>
+
+                {/* Efeito de Scanner */}
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-amber/[0.03] to-transparent h-20 animate-scanline"></div>
+              </div>
+              
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                <p className="text-[8px] text-amber/40 uppercase font-black tracking-widest">
+                  Transmissão ao Vivo • {new Date().toLocaleTimeString()} • HQ LINK STABLE
+                </p>
+              </div>
             </div>
           )}
 

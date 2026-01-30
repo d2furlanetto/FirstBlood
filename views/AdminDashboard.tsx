@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { Plus, PlusCircle, MinusCircle, Trash2, ShieldAlert, Award, RefreshCcw, Camera, MapPin, SlidersHorizontal, Lock, QrCode, Radio, Upload, ImageIcon, Users, UserMinus, Skull, MapIcon, Target, LayoutGrid, X, Edit3, Save, CheckCircle2, LinkIcon, ChevronRight, Info, Timer, Trophy, Shield, Swords, ListTree, Clock } from 'lucide-react';
+import { Plus, PlusCircle, MinusCircle, Trash2, ShieldAlert, Award, RefreshCcw, Camera, MapPin, SlidersHorizontal, Lock, QrCode, Radio, Upload, ImageIcon, Users, UserMinus, Skull, MapIcon, Target, LayoutGrid, X, Edit3, Save, CheckCircle2, LinkIcon, ChevronRight, Info, Timer, Trophy, Shield, Swords, ListTree, Clock, ImagePlus } from 'lucide-react';
 import { TacticalButton } from '../components/TacticalButton';
 import { OperationEvent, Operator, MissionStatus, Mission, ArmyType } from '../types';
 import { ARMY_CONFIG } from '../constants';
@@ -22,6 +22,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = React.useState<'missions' | 'map' | 'ranking'>('missions');
   const [editingMission, setEditingMission] = React.useState<Partial<Mission> | null>(null);
   const [selectedMissionQR, setSelectedMissionQR] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const toggleArmyInMission = (army: ArmyType) => {
     if (!editingMission) return;
@@ -30,6 +31,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       ? currentArmies.filter(a => a !== army)
       : [...currentArmies, army];
     setEditingMission({ ...editingMission, armies: newArmies });
+  };
+
+  const handleMapUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // Limite de 1MB para Firestore base64
+        alert("ARQUIVO MUITO GRANDE. LIMITE: 1MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUpdateOperation({ mapUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const primaryMissions = operation.missions.filter(m => m.isMain);
@@ -95,6 +111,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               ))}
               <TacticalButton label="NOVA MISSÃO PRIMÁRIA" icon={<PlusCircle size={20}/>} className="w-full" onClick={() => setEditingMission({ title: '', briefing: '', points: 200, isMain: true, code: '', timerMinutes: 0, armies: ['ALIADO', 'INVASOR', 'MERCENARIO'] })} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'map' && (
+          <div className="space-y-6">
+            <div className="military-border bg-black aspect-video relative overflow-hidden group">
+              {operation.mapUrl ? (
+                <img src={operation.mapUrl} className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-amber/20 p-8 border-2 border-dashed border-amber/10">
+                  <MapPin size={48} className="mb-2" />
+                  <span className="text-[10px] font-black uppercase">Nenhum Mapa Carregado</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                 <p className="text-[10px] font-black text-amber uppercase tracking-widest">Visualização em Campo</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleMapUpload} 
+                className="hidden" 
+                accept="image/*"
+              />
+              <TacticalButton 
+                label="CARREGAR NOVO MAPA" 
+                icon={<ImagePlus size={18}/>} 
+                className="w-full py-4" 
+                onClick={() => fileInputRef.current?.click()}
+              />
+              <p className="text-[8px] text-amber/40 uppercase font-black text-center tracking-tighter">
+                Recomendado: Formato Paisagem (16:9), máximo 1MB
+              </p>
             </div>
           </div>
         )}
