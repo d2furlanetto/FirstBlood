@@ -311,7 +311,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({
             <div className="p-4 border-b border-amber/20 bg-amber/5 flex justify-between items-start">
               <div className="flex-1">
                 <h3 className="font-orbitron font-black text-lg text-white uppercase">{detailMission.title}</h3>
-                <span className="text-[8px] font-black text-amber/60 uppercase">OBJETIVO TÁTICO: {detailMission.code}</span>
+                <span className="text-[8px] font-black text-amber/60 uppercase">OBJETIVO TÁTICO: [REQUER RECONHECIMENTO]</span>
               </div>
               <button onClick={() => setDetailMission(null)} className="p-2 text-amber/40 hover:text-amber ml-2"><X size={24} /></button>
             </div>

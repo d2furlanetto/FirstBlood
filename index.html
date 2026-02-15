@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -96,6 +97,15 @@
         0% { transform: scale(0.8); opacity: 0.8; }
         100% { transform: scale(2); opacity: 0; }
       }
+
+      /* Navigation Animations */
+      @keyframes scanline-nav {
+        from { transform: translateY(-100%); }
+        to { transform: translateY(100%); }
+      }
+      .animate-scanline {
+        animation: scanline-nav 2s linear infinite;
+      }
     </style>
     <script type="importmap">
 {
@@ -105,13 +115,13 @@
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
     "lucide-react": "https://esm.sh/lucide-react@0.463.0",
-    "firebase/app": "https://esm.sh/firebase@12.8.0/app",
-    "firebase/firestore": "https://esm.sh/firebase@12.8.0/firestore",
-    "firebase/auth": "https://esm.sh/firebase@12.8.0/auth",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "firebase/app": "https://esm.sh/firebase@12.9.0/app",
+    "firebase/auth": "https://esm.sh/firebase@12.9.0/auth",
+    "firebase/firestore": "https://esm.sh/firebase@12.9.0/firestore",
+    "firebase/analytics": "https://esm.sh/firebase@12.9.0/analytics",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "@firebase/firestore": "https://esm.sh/@firebase/firestore@^4.10.0"
+    "firebase/": "https://esm.sh/firebase@^12.9.0/"
   }
 }
 </script>

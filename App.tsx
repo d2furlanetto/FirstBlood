@@ -8,20 +8,16 @@ import { INITIAL_OPERATION, getRankByScore, ARMY_CONFIG } from './constants';
 import { OperationEvent, MissionStatus, Operator, Mission, MissionProgress, ArmyType } from './types';
 import { TacticalButton } from './components/TacticalButton';
 import { db, auth } from './firebase';
-import * as authModule from "firebase/auth";
-import * as firestoreModule from "firebase/firestore";
-
-const { signInAnonymously } = authModule as any;
-const { 
+import { signInAnonymously } from "firebase/auth";
+import { 
   doc, 
   onSnapshot, 
   setDoc, 
   updateDoc, 
   collection, 
-  getDoc,
-  deleteDoc,
-  writeBatch
-} = firestoreModule as any;
+  deleteDoc, 
+  writeBatch 
+} from "firebase/firestore";
 
 const getDeviceId = () => {
   let id = localStorage.getItem('COMANDOS_DEVICE_ID');
@@ -84,6 +80,7 @@ const App: React.FC = () => {
     const setupSync = async () => {
       try {
         setIsSyncing(true);
+        // Autenticação anônima obrigatória para acesso às regras do Firestore
         await signInAnonymously(auth);
         
         unsubOp = onSnapshot(doc(db, "operations", "op-001"), (docSnap: any) => {
@@ -95,6 +92,7 @@ const App: React.FC = () => {
           setIsSyncing(false);
           setIsLocalMode(false);
         }, (err: any) => {
+          console.error("Op Sync Error:", err);
           setIsLocalMode(true);
           setIsSyncing(false);
         });
@@ -104,10 +102,12 @@ const App: React.FC = () => {
           snap.forEach((d: any) => ops.push(d.data() as Operator));
           setRanking(ops);
         }, (err: any) => {
+          console.error("Ranking Sync Error:", err);
           setIsLocalMode(true);
         });
 
       } catch (e) {
+        console.error("Firebase Setup Error:", e);
         setIsLocalMode(true);
         setIsSyncing(false);
       }
@@ -336,7 +336,7 @@ const App: React.FC = () => {
 
       {showPasswordModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-          <div className={`w-full max-w-sm military-border bg-black p-6 space-y-6 ${passwordError ? 'shake border-red-600' : 'border-amber'}`}>
+          <div className={`w-full max-sm military-border bg-black p-6 space-y-6 ${passwordError ? 'shake border-red-600' : 'border-amber'}`}>
             <h3 className="font-orbitron text-amber font-black uppercase tracking-widest">Chave de Acesso</h3>
             <input type="password" autoFocus value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && validateAdminPassword()} placeholder="SENHA" className="w-full bg-black/60 border border-amber/30 p-4 text-center text-amber font-mono text-xl uppercase focus:outline-none"/>
             <TacticalButton label="AUTENTICAR" onClick={validateAdminPassword} className="w-full py-4" />

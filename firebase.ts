@@ -1,8 +1,8 @@
 
 import { initializeApp } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Configuração do Firebase para o projeto COMANDOS
 const firebaseConfig = {
@@ -18,16 +18,15 @@ const firebaseConfig = {
 // Inicialização do Firebase
 const app = initializeApp(firebaseConfig);
 
-// Inicialização e exportação dos serviços necessários para o App.tsx
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Inicialização dos serviços associados à instância do app
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // Inicialização segura do Analytics
-let analytics: any = null;
 if (typeof window !== "undefined") {
   isSupported().then((supported) => {
-    if (supported) analytics = getAnalytics(app);
+    if (supported) getAnalytics(app);
   });
 }
 
-export { app, analytics };
+export { app, auth, db };
